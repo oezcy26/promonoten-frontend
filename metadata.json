@@ -1,0 +1,5 @@
+{
+  "name": "Lehrer-Assistent Pro",
+  "description": "Ein intelligentes Werkzeug für Lehrer zur Verwaltung von Schülern, Noten und zur KI-gestützten Erstellung von Feedback-E-Mails.",
+  "requestFramePermissions": []
+}
