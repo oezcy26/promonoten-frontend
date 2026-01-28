@@ -13,68 +13,109 @@ const StudentsView: React.FC<StudentsViewProps> = ({ students, onAddStudent, onD
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [splitted, setSplitted] = useState<string[]>([]);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+
+
+
+  const handleFileSelected = (file: File | null) => {
+    if (!file) return;
+    setSelectedFile(file);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files.length > 0 ? e.target.files[0] : null;
+    handleFileSelected(file);
+  };
+
+  const handleFileDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
-     fetch("api/hello")
-      .then(r => r.json())
-      .then(data => console.log(data));
-    if (!firstName || !lastName || !email) return;
-   
-    onAddStudent({ firstName, lastName, email });
-    setFirstName('');
-    setLastName('');
-    setEmail('');
+    e.stopPropagation();
+    setIsDraggingFile(false);
+
+    const file = e.dataTransfer.files && e.dataTransfer.files.length > 0 ? e.dataTransfer.files[0] : null;
+    handleFileSelected(file);
+    e.dataTransfer.clearData();
+  };
+
+  const handleFileDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(true);
+  };
+
+  const handleFileDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+  };
+
+  const handleImportClick = async () => {
+    if (!selectedFile) return;
+    try {
+      const content = await selectedFile.text();
+      content.split('\n').forEach(line => {
+        const columns = line.split(';');
+        console.log(line);
+        /* if (columns.length >= 3) {
+          const firstName = columns[0].trim();
+          const lastName = columns[1].trim();
+          const email = columns[2].trim();
+          if (firstName && lastName && email) {
+            onAddStudent({ firstName, lastName, email });
+          }
+        } */
+      })
+      
+          console.log('Import file content:', content);
+    } catch (error) {
+      console.error('Failed to read file:', error);
+    }
   };
 
   return (
     <div className="space-y-8 animate-fadeIn">
+
+
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <Icons.Plus /> Neuen Schüler hinzufügen
-        </h2>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Vorname</label>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="z.B. Max"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nachname</label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="z.B. Mustermann"
-            />
-          </div>
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">E-Mail Eltern</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="eltern@beispiel.de"
-              />
-            </div>
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors h-[42px]"
-            >
-              Hinzufügen
-            </button>
-          </div>
-        </form>
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Schülerliste importieren</h2>
+        <input
+          id="students-file-upload"
+          type="file"
+          className="hidden"
+          onChange={handleFileInputChange}
+        />
+        <label
+          htmlFor="students-file-upload"
+          onDrop={handleFileDrop}
+          onDragOver={handleFileDragOver}
+          onDragLeave={handleFileDragLeave}
+          className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+            isDraggingFile ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-400'
+          }`}
+        >
+          <span className="text-sm font-medium text-gray-700">
+            Datei hierher ziehen oder klicken, um eine Datei auszuwÃ¤hlen
+          </span>
+          <span className="text-xs text-gray-400">Exportierte Datei aus Lehreroffice</span>
+          {selectedFile ? (
+            <span className="text-sm text-blue-600 font-medium">{selectedFile.name}</span>
+          ) : null}
+        </label>
+        <button
+          type="button"
+          onClick={handleImportClick}
+          className="mt-4 w-full bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!selectedFile}
+        >
+          Importieren
+        </button>
       </div>
 
+  {/* 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-800">Schülerliste</h2>
@@ -115,6 +156,7 @@ const StudentsView: React.FC<StudentsViewProps> = ({ students, onAddStudent, onD
           </tbody>
         </table>
       </div>
+      */}
     </div>
   );
 };
