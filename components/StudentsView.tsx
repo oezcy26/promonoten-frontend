@@ -10,16 +10,8 @@ interface StudentsViewProps {
 }
 
 const StudentsView: React.FC<StudentsViewProps> = ({ students, onAddStudent, onDeleteStudent }) => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [splitted, setSplitted] = useState<string[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-
-
-
 
   const handleFileSelected = (file: File | null) => {
     if (!file) return;
@@ -56,23 +48,22 @@ const StudentsView: React.FC<StudentsViewProps> = ({ students, onAddStudent, onD
   const handleImportClick = async () => {
     if (!selectedFile) return;
     try {
-      const content = await selectedFile.text();
-      content.split('\n').forEach(line => {
-        const columns = line.split(';');
-        console.log(line);
-        /* if (columns.length >= 3) {
-          const firstName = columns[0].trim();
-          const lastName = columns[1].trim();
-          const email = columns[2].trim();
-          if (firstName && lastName && email) {
-            onAddStudent({ firstName, lastName, email });
-          }
-        } */
-      })
-      
-          console.log('Import file content:', content);
+      const formData = new FormData();
+      formData.append('selectedFile', selectedFile);
+
+      const response = await fetch('/api/schueler', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed with status ${response.status}`);
+      }
+
+      const result = await response.json().catch(() => null);
+      console.log('Upload success:', result);
     } catch (error) {
-      console.error('Failed to read file:', error);
+      console.error('Failed to upload file:', error);
     }
   };
 
@@ -100,7 +91,7 @@ const StudentsView: React.FC<StudentsViewProps> = ({ students, onAddStudent, onD
           <span className="text-sm font-medium text-gray-700">
             Datei hierher ziehen oder klicken, um eine Datei auszuwÃ¤hlen
           </span>
-          <span className="text-xs text-gray-400">Exportierte Datei aus Lehreroffice</span>
+          <span className="text-xs text-gray-400">Exportierte Datei aus Lehreroffice (Schülerdaten \ Schüler \ Exportieren \ als Textdatei )</span>
           {selectedFile ? (
             <span className="text-sm text-blue-600 font-medium">{selectedFile.name}</span>
           ) : null}
@@ -115,48 +106,7 @@ const StudentsView: React.FC<StudentsViewProps> = ({ students, onAddStudent, onD
         </button>
       </div>
 
-  {/* 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-800">Schülerliste</h2>
-        </div>
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-600 text-sm uppercase font-semibold">
-            <tr>
-              <th className="px-6 py-4">Vorname</th>
-              <th className="px-6 py-4">Nachname</th>
-              <th className="px-6 py-4">E-Mail</th>
-              <th className="px-6 py-4 text-right">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {students.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-gray-400">
-                  Noch keine Schüler hinzugefügt.
-                </td>
-              </tr>
-            ) : (
-              students.map((student) => (
-                <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium">{student.firstName}</td>
-                  <td className="px-6 py-4">{student.lastName}</td>
-                  <td className="px-6 py-4 text-gray-500">{student.email}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => onDeleteStudent(student.id)}
-                      className="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-all"
-                    >
-                      <Icons.Trash />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      */}
+  
     </div>
   );
 };
