@@ -12,6 +12,7 @@ interface GradesViewProps {
 const GradesView: React.FC<GradesViewProps> = ({ students, onAddStudent, onDeleteStudent }) => {
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedSemester, setSelectedSemester] = useState('1');
 
   const handleFileSelected = (file: File | null) => {
     if (!file) return;
@@ -51,7 +52,7 @@ const GradesView: React.FC<GradesViewProps> = ({ students, onAddStudent, onDelet
       const formData = new FormData();
       formData.append('selectedFile', selectedFile);
 
-      const response = await fetch('/api/schueler', {
+      const response = await fetch(`/api/noten?semester=${encodeURIComponent(selectedSemester)}`, {
         method: 'POST',
         body: formData,
       });
@@ -69,7 +70,23 @@ const GradesView: React.FC<GradesViewProps> = ({ students, onAddStudent, onDelet
 
   return (
     <div className="space-y-8 animate-fadeIn">
-
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <label htmlFor="semester-select" className="block text-sm font-medium text-gray-700 mb-2">
+          Semester
+        </label>
+        <select
+          id="semester-select"
+          value={selectedSemester}
+          onChange={(e) => setSelectedSemester(e.target.value)}
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          {['1', '2', '3', '4', '5', '6'].map((semester) => (
+            <option key={semester} value={semester}>
+              {semester}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Notendatei importieren</h2>
@@ -91,7 +108,7 @@ const GradesView: React.FC<GradesViewProps> = ({ students, onAddStudent, onDelet
           <span className="text-sm font-medium text-gray-700">
             Datei hierher ziehen oder klicken, um eine Datei auszuwählen
           </span>
-          <span className="text-xs text-gray-400">Exportierte Datei aus Lehreroffice</span>
+          <span className="text-xs text-gray-400">Lehreroffice / Zeugnis / dann unten links Tabelle kopieren / Inhalt in txt-Datei speichern / hier hochladens</span>
           {selectedFile ? (
             <span className="text-sm text-blue-600 font-medium">{selectedFile.name}</span>
           ) : null}
