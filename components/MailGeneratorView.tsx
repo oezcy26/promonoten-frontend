@@ -15,6 +15,7 @@ const MailGeneratorView: React.FC<MailGeneratorViewProps> = ({ students, grades 
   const [selectedSemester, setSelectedSemester] = useState('');
   const [selectedGradeId, setSelectedGradeId] = useState('');
   const [generatedMail, setGeneratedMail] = useState('');
+  const [generatedMails, setGeneratedMails] = useState<Array<Record<string, unknown>>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingClasses, setIsLoadingClasses] = useState(false);
   const [classesError, setClassesError] = useState('');
@@ -93,6 +94,7 @@ const MailGeneratorView: React.FC<MailGeneratorViewProps> = ({ students, grades 
     }
 
     setIsLoading(true);
+    setGeneratedMails([]);
     try {
       const response = await fetch('/api/mails', {
         method: 'POST',
@@ -112,17 +114,46 @@ const MailGeneratorView: React.FC<MailGeneratorViewProps> = ({ students, grades 
       const data = await response.json();
       console.log('Mail generation response:', data);
 
+      if (Array.isArray(data)) {
+        setGeneratedMails(data as Array<Record<string, unknown>>);
+      } else {
+        setGeneratedMails([]);
+      }
+
+
+
     } catch (error) {
       setGeneratedMail('');
+      setGeneratedMails([]);
       alert('Mail konnte nicht generiert werden.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedMail);
-    alert("In die Zwischenablage kopiert!");
+  const handleOpenMail = (item: Record<string, unknown>) => {
+    const subject = 'Noten Semester'+" "+ selectedSemester +  ": " + item.vorname + " " + item.nachname;
+    const email = typeof item.email === 'string' ? item.email : '';
+    const notenLines = normalizeNoten(item.noten);
+    //iterate over notenlines
+    notenLines.forEach((line, index) => {
+      notenLines[index] = JSON.parse(line).fach + ' : ' + JSON.parse(line).note;
+    });  
+
+    const body = notenLines.join('\n');
+    const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailto, '_blank');
+  };
+
+  const normalizeNoten = (noten: unknown): string[] => {
+    if (Array.isArray(noten)) {
+      return noten.map((entry) =>
+        typeof entry === 'string' ? entry : JSON.stringify(entry)
+      //typeof entry === 'string' ? entry : JSON.parse(entry).fach
+      );
+    }
+    if (typeof noten === 'string') return [noten];
+    return [];
   };
 
   return (
@@ -194,21 +225,40 @@ const MailGeneratorView: React.FC<MailGeneratorViewProps> = ({ students, grades 
         </div>
       </div>
 
-      {generatedMail && (
-        <div className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 animate-slideUp">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-gray-800">Vorschau</h3>
-            <button
-              onClick={copyToClipboard}
-              className="text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 border border-blue-100"
-            >
-              Text kopieren
-            </button>
-          </div>
-          <div className="prose prose-blue max-w-none">
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 whitespace-pre-wrap text-gray-800 font-serif leading-relaxed">
-              {generatedMail}
-            </div>
+      {generatedMails.length > 0 && (
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">Generierte Mails</h3>
+          <div className="space-y-4">
+            {generatedMails.map((item, index) => {
+              const email = typeof item.email === 'string' ? item.email : '';
+              const notenLines = normalizeNoten(item.noten);
+              const vorname = typeof item.vorname === 'string' ? item.vorname : '';
+              const nachname = typeof item.nachname === 'string' ? item.nachname : '';
+              return (
+                <div key={`${email}-${index}`} className="rounded-xl border border-gray-200 p-4 space-y-3">
+                  <div className="text-sm text-gray-700 space-y-1">
+                    {vorname && <div><span className="font-semibold">Vorname:</span> {vorname}</div>}
+                    {nachname && <div><span className="font-semibold">Nachname:</span> {nachname}</div>}
+                    {email && <div><span className="font-semibold">Email:</span> {email}</div>}
+                  </div>
+                  {notenLines.length > 0 && (
+                    <div className="text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-1">
+                      {notenLines.map((line, lineIndex) => (
+                        <div key={`${email}-${index}-${lineIndex}`} className="whitespace-pre-wrap">
+                          {JSON.parse(line).fach} : {JSON.parse(line).note}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleOpenMail(item)}
+                    className="px-4 py-2 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition"
+                  >
+                    Mail generieren
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
