@@ -4,6 +4,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+
+  // Determine if running in Docker and set the host accordingly
+  const isDocker = process.env.RUNNING_IN_CONTAINER === 'true'; 
+  const myhost = isDocker ? 'backend' : '0.0.0.0';
+
   return {
     server: {
       port: 3000,
